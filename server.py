@@ -313,8 +313,6 @@ def purchase_places():
         # competition["numberOfPlaces"] -= placesRequired
         club["points"] -= placesRequired
 
-        flash("Great-booking complete!")
-
         response_data = {
             "club": {
                 "name": club["name"],
@@ -327,7 +325,17 @@ def purchase_places():
                 "numberOfPlaces": competition["numberOfPlaces"],
             },
         }
-        return jsonify(response_data)
+        if (
+            request.accept_mimetypes.accept_json
+            and not request.accept_mimetypes.accept_html
+        ):
+            return jsonify(response_data)
+        else:
+            flash("Great-booking complete!")
+            return render_template(
+                "welcome.html", club=club, competitions=app.competitions
+            )
+        # return jsonify(response_data)
 
     except (StopIteration, PastCompetitionError, OverbookingError) as e:
         return handle_error(str(e), 400, club, app.competitions)

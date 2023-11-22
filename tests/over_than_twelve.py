@@ -12,31 +12,41 @@ def client():
         yield client
 
 
-def test_select_more_than_12_places(client):
-    app.competition = {
+@pytest.fixture
+def competition_data():
+    return {
         "name": "Winter 2024",
         "date": "2024-01-22 13:30:00",
         "numberOfPlaces": "11",
     }
-    app.club = {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
+
+
+@pytest.fixture
+def club_data():
+    return {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
+
+
+def test_select_more_than_12_places(client, competition_data, club_data):
     response = client.post(
         "/purchasePlaces",
-        data={"places": 13, "club": "She Lifts", "competition": "Winter 2024"},
+        data={
+            "places": 13,
+            "club": club_data["name"],
+            "competition": competition_data["name"],
+        },
     )
     assert response.status_code == 400
     assert b'{"Error":"Cannot select more than 12 places"}' in response.data
 
 
-def test_select_more_than_club_points(client):
-    app.competition = {
-        "name": "Winter 2024",
-        "date": "2024-01-22 13:30:00",
-        "numberOfPlaces": "11",
-    }
-    app.club = {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
+def test_select_more_than_club_points(client, competition_data, club_data):
     response = client.post(
         "/purchasePlaces",
-        data={"places": 11, "club": "She Lifts", "competition": "Winter 2024"},
+        data={
+            "places": 11,
+            "club": club_data["name"],
+            "competition": competition_data["name"],
+        },
     )
     assert response.status_code == 400
     assert b'{"Error":"Cannot select more places than the club has"}' in response.data
