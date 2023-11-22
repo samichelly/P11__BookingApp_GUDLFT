@@ -1,5 +1,6 @@
 import json
 from flask import Flask, render_template, request, redirect, flash, url_for, jsonify
+from datetime import datetime
 
 
 def loadClubs():
@@ -34,8 +35,8 @@ def showSummary():
 
 @app.route("/book/<competition>/<club>")
 def book(competition, club):
-    foundClub, = [c for c in app.clubs if c["name"] == club]
-    foundCompetition, = [c for c in app.competitions if c["name"] == competition]
+    (foundClub,) = [c for c in app.clubs if c["name"] == club]
+    (foundCompetition,) = [c for c in app.competitions if c["name"] == competition]
     if foundClub and foundCompetition:
         return render_template(
             "booking.html", club=foundClub, competition=foundCompetition
@@ -57,10 +58,27 @@ def book(competition, club):
 
 @app.route("/purchasePlaces", methods=["POST"])
 def purchasePlaces():
-    competition = [c for c in app.competitions if c["name"] == request.form["competition"]][
-        0
-    ]
+    competition = [
+        c for c in app.competitions if c["name"] == request.form["competition"]
+    ][0]
     club = [c for c in app.clubs if c["name"] == request.form["club"]][0]
+
+    competition_date = datetime.strptime(competition["date"], "%Y-%m-%d %H:%M:%S")
+    current_date = datetime.now()
+
+    if competition_date < current_date:
+        if (
+            request.accept_mimetypes.accept_json
+            and not request.accept_mimetypes.accept_html
+        ):
+            response_data = {"Error": "Past competition"}
+            return jsonify(response_data), 400
+        else:
+            flash("Past competition, choose another competition")
+            return render_template(
+                "welcome.html", club=club, competitions=app.competitions
+            )
+
     placesRequired = int(request.form["places"])
 
     club["points"] = int(club["points"])
@@ -72,26 +90,26 @@ def purchasePlaces():
     # club["points"] -= 27
 
     flash("Great-booking complete!")
-    # return (club, competitions) # pour test
-    # return render_template("welcome.html", club=club, competitions=competitions)
 
-    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
-        # Si le client demande JSON, renvoyer une réponse JSON
+    if (
+        request.accept_mimetypes.accept_json
+        and not request.accept_mimetypes.accept_html
+    ):
         response_data = {
-            'club': {
-                'name': club['name'],
-                'email': club['email'],
-                'points': club['points'],
+            "club": {
+                "name": club["name"],
+                "email": club["email"],
+                "points": club["points"],
             },
-            'competition': {
-                'name': competition['name'],
-                'date': competition['date'],
-                'numberOfPlaces': competition['numberOfPlaces'],
+            "competition": {
+                "name": competition["name"],
+                "date": competition["date"],
+                "numberOfPlaces": competition["numberOfPlaces"],
             },
         }
         return jsonify(response_data)
     else:
-        return render_template('welcome.html', club=club, competitions=app.competitions)
+        return render_template("welcome.html", club=club, competitions=app.competitions)
 
 
 # TODO: Add route for points display
