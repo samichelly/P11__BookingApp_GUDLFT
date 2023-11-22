@@ -28,7 +28,7 @@ def test_purchase_places_past_competition(client):
         },
     )
 
-    assert b'{"Error":"Past competition"}\n' in response.data
+    assert b'{"Error":"Past competition"}' in response.data
     assert response.status_code == 400
 
 
@@ -48,5 +48,5 @@ def test_purchase_places_future_competition(client):
         },
     )
 
-    assert b"Error: Past competition" not in response.data
+    assert b'{"Error":"Past competition"}' not in response.data
     assert response.status_code == 200

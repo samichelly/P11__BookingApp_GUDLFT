@@ -1,5 +1,14 @@
 import json
-from flask import Flask, render_template, request, redirect, flash, url_for, jsonify
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    flash,
+    url_for,
+    jsonify,
+    abort,
+)
 from datetime import datetime
 
 
@@ -37,6 +46,23 @@ def showSummary():
 def book(competition, club):
     (foundClub,) = [c for c in app.clubs if c["name"] == club]
     (foundCompetition,) = [c for c in app.competitions if c["name"] == competition]
+
+    # competition_date = datetime.strptime(competition["date"], "%Y-%m-%d %H:%M:%S")
+    # current_date = datetime.now()
+
+    # if competition_date < current_date:
+    #     if (
+    #         request.accept_mimetypes.accept_json
+    #         and not request.accept_mimetypes.accept_html
+    #     ):
+    #         response_data = {"Error": "Past competition"}
+    #         return jsonify(response_data), 400
+    #     else:
+    #         flash("Past competition, choose another competition")
+    #         return render_template(
+    #             "welcome.html", club=club, competitions=app.competitions
+    #         )
+
     if foundClub and foundCompetition:
         return render_template(
             "booking.html", club=foundClub, competition=foundCompetition
@@ -71,8 +97,8 @@ def purchasePlaces():
             request.accept_mimetypes.accept_json
             and not request.accept_mimetypes.accept_html
         ):
-            response_data = {"Error": "Past competition"}
-            return jsonify(response_data), 400
+            response_past_competition = {"Error": "Past competition"}
+            return jsonify(response_past_competition), 400
         else:
             flash("Past competition, choose another competition")
             return render_template(
@@ -83,11 +109,13 @@ def purchasePlaces():
 
     club["points"] = int(club["points"])
 
+    if placesRequired > 12:
+        response_overbooking = {"Error": "Cannot select more than 12 places"}
+        return jsonify(response_overbooking), 400
+
     competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
 
     club["points"] -= placesRequired
-
-    # club["points"] -= 27
 
     flash("Great-booking complete!")
 
