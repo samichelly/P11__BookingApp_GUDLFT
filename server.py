@@ -1,6 +1,7 @@
 import json
 from flask import Flask, render_template, request, redirect, flash, url_for, jsonify
 from datetime import datetime
+from collections import defaultdict
 
 
 app = Flask(__name__)
@@ -21,6 +22,8 @@ def load_competitions():
 
 app.competitions = load_competitions()
 app.clubs = load_clubs()
+
+reserved_places = defaultdict(int)
 
 
 class PastCompetitionError(Exception):
@@ -44,7 +47,7 @@ def handle_error(error_message, status_code, club, competitions):
 
 
 def check_overbooking(placesRequired, limit, error_message):
-    if placesRequired > limit or (limit - placesRequired) < 1:
+    if placesRequired > limit:
         raise OverbookingError(error_message)
 
 
@@ -99,6 +102,13 @@ def purchase_places():
             raise ValueError("Invalid number of places")
 
         placesRequired = int(request.form["places"])
+
+        total_reserved_places = reserved_places[(club["name"], competition["name"])]
+        if total_reserved_places + placesRequired > 12:
+            raise OverbookingError(
+                f"Cannot select more than 12 places"  # , you have already {total_reserved_places}
+            )
+
         club["points"] = int(club["points"])
 
         check_overbooking(
@@ -106,6 +116,7 @@ def purchase_places():
             12,
             "Cannot select more than 12 places",
         )
+
         check_overbooking(
             placesRequired,
             club["points"],
@@ -120,7 +131,10 @@ def purchase_places():
         competition["numberOfPlaces"] = (
             int(competition["numberOfPlaces"]) - placesRequired
         )
+
         club["points"] -= placesRequired
+
+        reserved_places[(club["name"], competition["name"])] += placesRequired
 
         response_data = {
             "club": {

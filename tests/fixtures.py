@@ -17,6 +17,11 @@ def club_data():
 
 
 @pytest.fixture
+def club_data_two():
+    return {"name": "Iron Temple", "email": "admin@irontemple.com", "points": "34"}
+
+
+@pytest.fixture
 def competition_data_one():
     return {
         "name": "Winter 2024",
