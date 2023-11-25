@@ -3,8 +3,6 @@ import pytest
 from flask import Flask
 from server import app
 
-import pdb
-
 
 @pytest.fixture
 def client():
@@ -20,6 +18,7 @@ def client():
         yield client
 
 
+# tests de la bonne déduction des points de club et place de compétition corrects
 def test_deduct_points(client):
     # utilité de app_context
     # with app.app_context():

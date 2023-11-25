@@ -94,6 +94,10 @@ def purchase_places():
         if competition_date < current_date:
             raise PastCompetitionError("Past competition, choose another competition")
 
+        places_required_str = request.form["places"]
+        if not places_required_str.isdigit() or int(places_required_str) <= 0:
+            raise ValueError("Invalid number of places")
+
         placesRequired = int(request.form["places"])
         club["points"] = int(club["points"])
 
@@ -141,7 +145,7 @@ def purchase_places():
                 "welcome.html", club=club, competitions=app.competitions
             )
 
-    except (StopIteration, PastCompetitionError, OverbookingError) as e:
+    except (StopIteration, PastCompetitionError, OverbookingError, ValueError) as e:
         return handle_error(str(e), 400, club, app.competitions)
 
 

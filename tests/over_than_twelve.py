@@ -26,6 +26,7 @@ def club_data():
     return {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
 
 
+# tests des inputs en fonction de club et compétition
 def test_select_more_than_12_places(client, competition_data, club_data):
     response = client.post(
         "/purchasePlaces",
@@ -68,6 +69,36 @@ def test_select_more_than_competition_places(client):
         b'{"Error":"Cannot select more places than the competition has"}'
         or b'{"Error":"Cannot select more places than the club has"}' in response.data
     )
+
+
+def test_select_negative_places(client):
+    app.competition = {
+        "name": "Spring Festival",
+        "date": "2024-03-27 10:00:00",
+        "numberOfPlaces": "5",
+    }
+    app.club = {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
+    response = client.post(
+        "/purchasePlaces",
+        data={"places": -2, "club": "She Lifts", "competition": "Spring Festival"},
+    )
+    assert response.status_code == 400
+    assert b'{"Error":"Invalid number of places"}' in response.data
+
+
+def test_select_null_places(client):
+    app.competition = {
+        "name": "Spring Festival",
+        "date": "2024-03-27 10:00:00",
+        "numberOfPlaces": "5",
+    }
+    app.club = {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
+    response = client.post(
+        "/purchasePlaces",
+        data={"places": "", "club": "She Lifts", "competition": "Spring Festival"},
+    )
+    assert response.status_code == 400
+    assert b'{"Error":"Invalid number of places"}' in response.data
 
 
 # ajouter la réservation de plus de 12 en 2 fois
