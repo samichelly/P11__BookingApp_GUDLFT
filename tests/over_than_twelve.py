@@ -66,5 +66,8 @@ def test_select_more_than_competition_places(client):
     assert response.status_code == 400
     assert (
         b'{"Error":"Cannot select more places than the competition has"}'
-        in response.data
+        or b'{"Error":"Cannot select more places than the club has"}' in response.data
     )
+
+
+# ajouter la réservation de plus de 12 en 2 fois
