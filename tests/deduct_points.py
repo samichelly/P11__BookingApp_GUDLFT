@@ -2,28 +2,17 @@ import json
 import pytest
 from flask import Flask
 from server import app
+from .fixtures import client
 
 
-@pytest.fixture
-def client():
-    app.config["TESTING"] = True
+# tests de la bonne déduction des points de club et place de compétition corrects
+def test_deduct_points_deduct_places(client):
     app.competition = {
         "name": "Winter 2024",
         "date": "2024-01-22 13:30:00",
         "numberOfPlaces": "13",
     }
     app.club = {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
-    with app.test_client() as client:
-        client.environ_base["HTTP_ACCEPT"] = "application/json"
-        yield client
-
-
-# tests de la bonne déduction des points de club et place de compétition corrects
-def test_deduct_points(client):
-    # utilité de app_context
-    # with app.app_context():
-    #     app.competitions = competition
-    #     app.clubs = club
 
     club_points_before_booking = int(app.club["points"])
     competition_places_before_booking = int(app.competition["numberOfPlaces"])

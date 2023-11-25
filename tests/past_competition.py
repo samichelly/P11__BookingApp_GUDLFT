@@ -2,14 +2,7 @@ import json
 import pytest
 from flask import Flask
 from server import app
-
-
-@pytest.fixture
-def client():
-    app.config["TESTING"] = True
-    with app.test_client() as client:
-        client.environ_base["HTTP_ACCEPT"] = "application/json"
-        yield client
+from .fixtures import client
 
 
 def test_purchase_places_past_competition(client):
