@@ -93,7 +93,8 @@ def handle_error(error_message, status_code, club, competitions):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # app.clubs
+    return render_template("index.html", clubs=app.clubs)
 
 
 @app.route("/showSummary", methods=["POST"])
@@ -191,12 +192,12 @@ def purchase_places():
         if app.config["TESTING"] is True:
             return jsonify(response_data)
         else:
-            flash("Great-booking complete!")
+            flash(f"Great - {placesRequired} place(s) booked !")
             return render_template(
                 "welcome.html", club=club, competitions=app.competitions
             )
 
-    except (StopIteration, PastCompetitionError, OverbookingError, ValueError) as e:
+    except (PastCompetitionError, OverbookingError, ValueError) as e:
         return handle_error(str(e), 400, club, app.competitions)
 
 

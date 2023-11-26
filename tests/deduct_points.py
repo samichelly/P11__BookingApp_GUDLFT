@@ -9,12 +9,10 @@ from .fixtures import client
 def test_deduct_points_deduct_places(client):
     competition_to_use = {
         "name": "Winter 2024",
-        "date": "2024-01-22 13:30:00",
         "numberOfPlaces": "42",
     }
     club_to_use = {
         "name": "The Strongest",
-        "email": "the@strongest.co.uk",
         "points": "10",
     }
 
