@@ -7,6 +7,8 @@ from collections import defaultdict
 app = Flask(__name__)
 app.secret_key = "something_special"
 
+app.config["TESTING"] = True
+
 
 def load_clubs():
     with open("clubs.json") as c:
@@ -20,8 +22,50 @@ def load_competitions():
         return list_of_competitions
 
 
-app.competitions = load_competitions()
-app.clubs = load_clubs()
+def load_test_clubs():
+    with open("tests/test_clubs.json") as c:
+        list_of_test_clubs = json.load(c)["clubs"]
+        return list_of_test_clubs
+
+
+def load_test_competitions():
+    with open("tests/test_competitions.json") as comps:
+        list_of_test_competitions = json.load(comps)["competitions"]
+        return list_of_test_competitions
+
+
+if app.config.get("TESTING"):
+    # Utilisez les données de test
+    print("\nTRUE\n")
+    app.config["competitions"] = load_test_competitions()
+    app.config["clubs"] = load_test_clubs()
+else:
+    # Utilisez les données normales
+    print("\nFALSE\n")
+    app.config["competitions"] = load_competitions()
+    app.config["clubs"] = load_clubs()
+
+
+app.competitions = app.config["competitions"]
+app.clubs = app.config["clubs"]
+
+# def load_clubs():
+#     with open("clubs.json") as c:
+#         list_of_clubs = json.load(c)["clubs"]
+#         return list_of_clubs
+
+
+# def load_competitions():
+#     with open("competitions.json") as comps:
+#         list_of_competitions = json.load(comps)["competitions"]
+#         return list_of_competitions
+
+
+# app.competitions = load_competitions()
+# app.clubs = load_clubs()
+
+# competitions = load_competitions()
+# clubs = load_clubs()
 
 reserved_places = defaultdict(int)
 
@@ -35,20 +79,16 @@ class OverbookingError(Exception):
 
 
 def handle_error(error_message, status_code, club, competitions):
-    if (
-        request.accept_mimetypes.accept_json
-        and not request.accept_mimetypes.accept_html
-    ):
+    # if (
+    #     request.accept_mimetypes.accept_json
+    #     and not request.accept_mimetypes.accept_html
+    # ):
+    if app.config["TESTING"] is True:
         response_data = {"Error": error_message}
         return jsonify(response_data), status_code
     else:
         flash(error_message)
         return render_template("welcome.html", club=club, competitions=competitions)
-
-
-def check_overbooking(placesRequired, limit, error_message):
-    if placesRequired > limit:
-        raise OverbookingError(error_message)
 
 
 @app.route("/")
@@ -86,11 +126,13 @@ def book(competition, club):
 @app.route("/purchasePlaces", methods=["POST"])
 def purchase_places():
     try:
+        # print("competitions : ", app.competitions)
         competition = next(
             c for c in app.competitions if c["name"] == request.form["competition"]
         )
+        # print("competition : ", competition)
         club = next(c for c in app.clubs if c["name"] == request.form["club"])
-
+        # print("club : ", club)
         competition_date = datetime.strptime(competition["date"], "%Y-%m-%d %H:%M:%S")
         current_date = datetime.now()
 
@@ -104,6 +146,8 @@ def purchase_places():
         placesRequired = int(request.form["places"])
 
         total_reserved_places = reserved_places[(club["name"], competition["name"])]
+        # print("total_reserved_places : ", total_reserved_places)
+        # print("placesRequired : ", placesRequired)
         if total_reserved_places + placesRequired > 12:
             raise OverbookingError(
                 f"Cannot select more than 12 places"  # , you have already {total_reserved_places}
@@ -111,22 +155,14 @@ def purchase_places():
 
         club["points"] = int(club["points"])
 
-        check_overbooking(
-            placesRequired,
-            12,
-            "Cannot select more than 12 places",
-        )
+        if placesRequired > 12:
+            raise OverbookingError("Cannot select more than 12 places")
 
-        check_overbooking(
-            placesRequired,
-            club["points"],
-            "Cannot select more places than the club has",
-        )
-        check_overbooking(
-            placesRequired,
-            int(competition["numberOfPlaces"]),
-            "Cannot select more places than the competition has",
-        )
+        elif placesRequired > club["points"]:
+            raise OverbookingError("Cannot select more places than the club has")
+
+        elif placesRequired > int(competition["numberOfPlaces"]):
+            raise OverbookingError("Cannot select more places than the competition has")
 
         competition["numberOfPlaces"] = (
             int(competition["numberOfPlaces"]) - placesRequired
@@ -148,10 +184,11 @@ def purchase_places():
                 "numberOfPlaces": competition["numberOfPlaces"],
             },
         }
-        if (
-            request.accept_mimetypes.accept_json
-            and not request.accept_mimetypes.accept_html
-        ):
+        # if (
+        #     request.accept_mimetypes.accept_json
+        #     and not request.accept_mimetypes.accept_html
+        # ):
+        if app.config["TESTING"] is True:
             return jsonify(response_data)
         else:
             flash("Great-booking complete!")

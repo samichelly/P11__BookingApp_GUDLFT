@@ -7,23 +7,27 @@ from .fixtures import client
 
 # tests de la bonne déduction des points de club et place de compétition corrects
 def test_deduct_points_deduct_places(client):
-    app.competition = {
+    competition_to_use = {
         "name": "Winter 2024",
         "date": "2024-01-22 13:30:00",
-        "numberOfPlaces": "13",
+        "numberOfPlaces": "42",
     }
-    app.club = {"name": "She Lifts", "email": "kate@shelifts.co.uk", "points": "10"}
+    club_to_use = {
+        "name": "The Strongest",
+        "email": "the@strongest.co.uk",
+        "points": "10",
+    }
 
-    club_points_before_booking = int(app.club["points"])
-    competition_places_before_booking = int(app.competition["numberOfPlaces"])
+    club_points_before_booking = int(club_to_use["points"])
+    competition_places_before_booking = int(competition_to_use["numberOfPlaces"])
     places_booked = 3
 
     response = client.post(
         "/purchasePlaces",
         data={
             "places": places_booked,
-            "club": app.club["name"],
-            "competition": app.competition["name"],
+            "club": club_to_use["name"],
+            "competition": competition_to_use["name"],
         },
     )
 
