@@ -7,7 +7,7 @@ from collections import defaultdict
 app = Flask(__name__)
 app.secret_key = "something_special"
 
-app.config["TESTING"] = True
+# app.config["TESTING"] = True
 
 
 def load_clubs():
@@ -93,8 +93,8 @@ def handle_error(error_message, status_code, club, competitions):
 
 @app.route("/")
 def index():
-    # app.clubs
-    return render_template("index.html", clubs=app.clubs)
+    clubs_sorted = sorted(app.clubs, key=lambda x: x["name"])
+    return render_template("index.html", clubs=clubs_sorted)
 
 
 @app.route("/showSummary", methods=["POST"])
