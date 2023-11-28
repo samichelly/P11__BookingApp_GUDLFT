@@ -152,9 +152,12 @@ def show_summary():
 
 @app.route("/book/<competition>/<club>")
 def book(competition, club):
+    upcoming_competitions = get_upcoming_competitions(app.competitions, CURRENT_DATE)
+    past_competitions = get_past_competitions(app.competitions, CURRENT_DATE)
+
     found_club = next((c for c in app.clubs if c["name"] == club), None)
     found_competition = next(
-        (c for c in app.competitions if c["name"] == competition), None
+        (c for c in upcoming_competitions if c["name"] == competition), None
     )
 
     if found_club and found_competition:
@@ -163,7 +166,12 @@ def book(competition, club):
         )
     else:
         flash("Something went wrong-please try again")
-        return render_template("index.html")
+        return render_template(
+            "welcome.html",
+            club=found_club,
+            upcoming_competitions=upcoming_competitions,
+            past_competitions=past_competitions,
+        )
 
 
 @app.route("/purchasePlaces", methods=["POST", "GET"])
