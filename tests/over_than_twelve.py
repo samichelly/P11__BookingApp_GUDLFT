@@ -24,6 +24,7 @@ def test_select_less_than_12_places(client):
         },
     )
     assert response.status_code == 200
+    # ajouter le nombre de places restantes et le nombres de poonts restants
 
 
 def test_select_more_than_12_places(client):

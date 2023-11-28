@@ -1,7 +1,22 @@
 import json
-from flask import Flask, render_template, request, redirect, flash, url_for, jsonify
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    flash,
+    url_for,
+    jsonify,
+    current_app,
+)
 from datetime import datetime
 from collections import defaultdict
+import os
+
+
+CURRENT_DATE = datetime.now()
+
+print(CURRENT_DATE)
 
 
 app = Flask(__name__)
@@ -35,39 +50,61 @@ def load_test_competitions():
 
 
 if app.config.get("TESTING"):
-    # Utilisez les données de test
     print("\nTRUE\n")
     app.config["competitions"] = load_test_competitions()
     app.config["clubs"] = load_test_clubs()
 else:
-    # Utilisez les données normales
     print("\nFALSE\n")
     app.config["competitions"] = load_competitions()
     app.config["clubs"] = load_clubs()
 
 
+# def configure_app():
+#     if "PYTEST_CURRENT_TEST" in os.environ:
+#         app.config["TESTING"] = True
+#         print("\nTRUE\n")
+#         # Si le script est exécuté par pytest, utilisez les données de test
+#         app.config["competitions"] = load_test_competitions()
+#         app.config["clubs"] = load_test_clubs()
+#     else:
+#         # Sinon, utilisez les données normales
+#         app.config["competitions"] = load_competitions()
+#         app.config["clubs"] = load_clubs()
+
+# configure_app()
+
+
 app.competitions = app.config["competitions"]
 app.clubs = app.config["clubs"]
-
-# def load_clubs():
-#     with open("clubs.json") as c:
-#         list_of_clubs = json.load(c)["clubs"]
-#         return list_of_clubs
-
-
-# def load_competitions():
-#     with open("competitions.json") as comps:
-#         list_of_competitions = json.load(comps)["competitions"]
-#         return list_of_competitions
-
-
-# app.competitions = load_competitions()
-# app.clubs = load_clubs()
-
-# competitions = load_competitions()
-# clubs = load_clubs()
-
 reserved_places = defaultdict(int)
+
+
+# upcoming_competitions = [
+#     comp
+#     for comp in app.competitions
+#     if datetime.strptime(comp["date"], "%Y-%m-%d %H:%M:%S") > CURRENT_DATE
+# ]
+# past_competitions = [
+#     comp
+#     for comp in app.competitions
+#     if datetime.strptime(comp["date"], "%Y-%m-%d %H:%M:%S") <= CURRENT_DATE
+# ]
+
+
+def get_upcoming_competitions(competitions, current_date):
+    return [
+        comp
+        for comp in competitions
+        if datetime.strptime(comp["date"], "%Y-%m-%d %H:%M:%S") > current_date
+    ]
+
+
+def get_past_competitions(competitions, current_date):
+    return [
+        comp
+        for comp in competitions
+        if datetime.strptime(comp["date"], "%Y-%m-%d %H:%M:%S") <= current_date
+    ]
 
 
 class PastCompetitionError(Exception):
@@ -79,11 +116,7 @@ class OverbookingError(Exception):
 
 
 def handle_error(error_message, status_code, club, competitions):
-    # if (
-    #     request.accept_mimetypes.accept_json
-    #     and not request.accept_mimetypes.accept_html
-    # ):
-    if app.config["TESTING"] is True:
+    if app.config.get("TESTING"):
         response_data = {"Error": error_message}
         return jsonify(response_data), status_code
     else:
@@ -103,9 +136,18 @@ def show_summary():
         (club for club in app.clubs if club["email"] == request.form["email"]), None
     )
     if club is None:
-        flash("Club not found")
-        return render_template("index.html")
-    return render_template("welcome.html", club=club, competitions=app.competitions)
+        flash("Incorrect email. Please check your email and try again.", "error")
+        return redirect(url_for("index"))
+
+    upcoming_competitions = get_upcoming_competitions(app.competitions, CURRENT_DATE)
+    past_competitions = get_past_competitions(app.competitions, CURRENT_DATE)
+
+    return render_template(
+        "welcome.html",
+        club=club,
+        upcoming_competitions=upcoming_competitions,
+        past_competitions=past_competitions,
+    )
 
 
 @app.route("/book/<competition>/<club>")
@@ -124,7 +166,7 @@ def book(competition, club):
         return render_template("index.html")
 
 
-@app.route("/purchasePlaces", methods=["POST"])
+@app.route("/purchasePlaces", methods=["POST", "GET"])
 def purchase_places():
     try:
         # print("competitions : ", app.competitions)
@@ -135,43 +177,41 @@ def purchase_places():
         club = next(c for c in app.clubs if c["name"] == request.form["club"])
         # print("club : ", club)
         competition_date = datetime.strptime(competition["date"], "%Y-%m-%d %H:%M:%S")
-        current_date = datetime.now()
+        CURRENT_DATE = datetime.now()
 
-        if competition_date < current_date:
+        if competition_date < CURRENT_DATE:
             raise PastCompetitionError("Past competition, choose another competition")
 
-        places_required_str = request.form["places"]
-        if not places_required_str.isdigit() or int(places_required_str) <= 0:
-            raise ValueError("Invalid number of places")
+        if request.method == "POST":
+            places_required_str = request.form["places"]
+            if not places_required_str.isdigit() or int(places_required_str) <= 0:
+                raise ValueError("Invalid number of places")
 
-        placesRequired = int(request.form["places"])
+            placesRequired = int(request.form["places"])
 
-        total_reserved_places = reserved_places[(club["name"], competition["name"])]
-        # print("total_reserved_places : ", total_reserved_places)
-        # print("placesRequired : ", placesRequired)
-        if total_reserved_places + placesRequired > 12:
-            raise OverbookingError(
-                f"Cannot select more than 12 places"  # , you have already {total_reserved_places}
+            total_reserved_places = reserved_places[(club["name"], competition["name"])]
+
+            if total_reserved_places + placesRequired > 12:
+                raise OverbookingError("Cannot select more than 12 places")
+
+            if placesRequired > 12:
+                raise OverbookingError("Cannot select more than 12 places")
+
+            elif placesRequired > club["points"]:
+                raise OverbookingError("Cannot select more places than the club has")
+
+            elif placesRequired > int(competition["numberOfPlaces"]):
+                raise OverbookingError(
+                    "Cannot select more places than the competition has"
+                )
+
+            competition["numberOfPlaces"] = (
+                competition["numberOfPlaces"] - placesRequired
             )
 
-        club["points"] = int(club["points"])
+            club["points"] -= placesRequired
 
-        if placesRequired > 12:
-            raise OverbookingError("Cannot select more than 12 places")
-
-        elif placesRequired > club["points"]:
-            raise OverbookingError("Cannot select more places than the club has")
-
-        elif placesRequired > int(competition["numberOfPlaces"]):
-            raise OverbookingError("Cannot select more places than the competition has")
-
-        competition["numberOfPlaces"] = (
-            int(competition["numberOfPlaces"]) - placesRequired
-        )
-
-        club["points"] -= placesRequired
-
-        reserved_places[(club["name"], competition["name"])] += placesRequired
+            reserved_places[(club["name"], competition["name"])] += placesRequired
 
         response_data = {
             "club": {
@@ -185,20 +225,49 @@ def purchase_places():
                 "numberOfPlaces": competition["numberOfPlaces"],
             },
         }
-        # if (
-        #     request.accept_mimetypes.accept_json
-        #     and not request.accept_mimetypes.accept_html
-        # ):
+
+        print("response")
+        print(response_data)
+        print("response")
+
+        # upcoming_competitions = get_upcoming_competitions(
+        #     app.competitions, CURRENT_DATE
+        # )
+        # past_competitions = get_past_competitions(app.competitions, CURRENT_DATE)
+
+        # if app.config["TESTING"] is True:
+        #     return jsonify(response_data)
+        # else:
+        #     flash(f"Great - {placesRequired} place(s) booked !")
+        #     return render_template(
+        #         "welcome.html",
+        #         club=club,
+        #         upcoming_competitions=upcoming_competitions,
+        #         past_competitions=past_competitions,
+        #     )
+
+    except (PastCompetitionError, OverbookingError, ValueError) as e:
+        return handle_error(str(e), 400, club, app.competitions)
+
+    else:
         if app.config["TESTING"] is True:
             return jsonify(response_data)
         else:
             flash(f"Great - {placesRequired} place(s) booked !")
-            return render_template(
-                "welcome.html", club=club, competitions=app.competitions
-            )
 
-    except (PastCompetitionError, OverbookingError, ValueError) as e:
-        return handle_error(str(e), 400, club, app.competitions)
+    finally:
+        upcoming_competitions = get_upcoming_competitions(
+            app.competitions, CURRENT_DATE
+        )
+        past_competitions = get_past_competitions(app.competitions, CURRENT_DATE)
+
+        if app.config["TESTING"] is not True:
+            return render_template(
+                "welcome.html",
+                club=club,
+                upcoming_competitions=upcoming_competitions,
+                past_competitions=past_competitions,
+            )
 
 
 @app.route("/logout")

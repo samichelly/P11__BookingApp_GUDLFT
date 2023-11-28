@@ -1,14 +1,15 @@
 import pytest
-from flask import Flask, current_app
+from flask import Flask, current_app#, create_app
 from server import app
 
 
 @pytest.fixture
 def client():
+    # app = create_app(testing=True)
     app.config["TESTING"] = True
     print("\nTest Example is running.\n")
     with app.test_client() as client:
-        client.environ_base["HTTP_ACCEPT"] = "application/json"
+        # client.environ_base["HTTP_ACCEPT"] = "application/json"
         yield client
 
 

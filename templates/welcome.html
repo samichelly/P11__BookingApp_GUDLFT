@@ -1,41 +1,97 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Summary | GUDLFT Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 50px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #3498db;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #333;
+        }
+
+        h4 {
+            color: red;
+        }
+
+        p {
+            color: green;
+        }
+    </style>
 </head>
 
 <body>
-    <h2>Welcome, {{club['email']}} </h2><a href="{{url_for('logout')}}">Logout</a>
+    <h1>Welcome, {{club['email']}}</h1>
+    <a href="{{url_for('logout')}}">Logout</a>
 
-    {% with messages = get_flashed_messages()%}
+    {% with messages = get_flashed_messages() %}
     {% if messages %}
     <ul>
         {% for message in messages %}
-        <li>{{message}}</li>
+        {{message}}
         {% endfor %}
     </ul>
-    {% endif%}
-    Points available: {{club['points']}}
-    <h3>Competitions:</h3>
+    {% endif %}
+    {% endwith %}
+
+    <p>Points available: {{club['points']}}</p>
+
+    <h2>Competitions</h2>
     <ul>
-        {% for comp in competitions%}
+        <h3>Past Competitions:</h3>
+        {% for comp in past_competitions %}
         <li>
             {{comp['name']}}<br />
-            Date: {{comp['date']}}</br>
+            Date: {{comp['date']}}<br />
+            <h4>Competition past</h4>
+        </li>
+        <hr />
+        {% endfor %}
+
+        <h3>Upcoming Competitions:</h3>
+
+        {% for comp in upcoming_competitions %}
+        <li>
+            {{comp['name']}}<br />
+            Date: {{comp['date']}}<br />
             {% if comp['numberOfPlaces']|int == 0 %}
-            <p>Competition full</p>
+            <h4>Competition full</h4>
             {% else %}
             Number of Places: {{comp['numberOfPlaces']}}
             <a href="{{ url_for('book',competition=comp['name'],club=club['name']) }}">Book Places</a>
-            {%endif%}
+            {% endif %}
         </li>
         <hr />
         {% endfor %}
     </ul>
-    {%endwith%}
-
 </body>
 
 </html>
