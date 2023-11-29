@@ -16,13 +16,11 @@ import os
 
 CURRENT_DATE = datetime.now()
 
-print(CURRENT_DATE)
-
 
 app = Flask(__name__)
 app.secret_key = "something_special"
 
-# app.config["TESTING"] = True
+app.config["TESTING"] = True
 
 
 def load_clubs():
@@ -57,21 +55,6 @@ else:
     print("\nFALSE\n")
     app.config["competitions"] = load_competitions()
     app.config["clubs"] = load_clubs()
-
-
-# def configure_app():
-#     if "PYTEST_CURRENT_TEST" in os.environ:
-#         app.config["TESTING"] = True
-#         print("\nTRUE\n")
-#         # Si le script est exécuté par pytest, utilisez les données de test
-#         app.config["competitions"] = load_test_competitions()
-#         app.config["clubs"] = load_test_clubs()
-#     else:
-#         # Sinon, utilisez les données normales
-#         app.config["competitions"] = load_competitions()
-#         app.config["clubs"] = load_clubs()
-
-# configure_app()
 
 
 app.competitions = app.config["competitions"]
@@ -132,16 +115,27 @@ def index():
 
 @app.route("/showSummary", methods=["POST"])
 def show_summary():
+    print("in fonction")
     club = next(
         (club for club in app.clubs if club["email"] == request.form["email"]), None
     )
+    print("club")
+    print(club)
     if club is None:
-        flash("Incorrect email. Please check your email and try again.", "error")
-        return redirect(url_for("index"))
+        print("No club")
+        if app.config["TESTING"] is True:
+            {"Error": "Incorrect email"}
+            return jsonify({"Error": "Incorrect email"}), 400
+        else:
+            flash("Incorrect email. Please check your email and try again.", "error")
+            return redirect(url_for("index"))
 
     upcoming_competitions = get_upcoming_competitions(app.competitions, CURRENT_DATE)
     past_competitions = get_past_competitions(app.competitions, CURRENT_DATE)
 
+    if app.config["TESTING"] is True:
+        return jsonify(club)
+    
     return render_template(
         "welcome.html",
         club=club,
@@ -233,26 +227,6 @@ def purchase_places():
                 "numberOfPlaces": competition["numberOfPlaces"],
             },
         }
-
-        print("response")
-        print(response_data)
-        print("response")
-
-        # upcoming_competitions = get_upcoming_competitions(
-        #     app.competitions, CURRENT_DATE
-        # )
-        # past_competitions = get_past_competitions(app.competitions, CURRENT_DATE)
-
-        # if app.config["TESTING"] is True:
-        #     return jsonify(response_data)
-        # else:
-        #     flash(f"Great - {placesRequired} place(s) booked !")
-        #     return render_template(
-        #         "welcome.html",
-        #         club=club,
-        #         upcoming_competitions=upcoming_competitions,
-        #         past_competitions=past_competitions,
-        #     )
 
     except (PastCompetitionError, OverbookingError, ValueError) as e:
         return handle_error(str(e), 400, club, app.competitions)
