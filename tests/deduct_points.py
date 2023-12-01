@@ -5,7 +5,6 @@ from server import app
 from .fixtures import client
 
 
-# tests de la bonne déduction des points de club et place de compétition corrects
 def test_deduct_points_deduct_places(client):
     competition_to_use = {
         "name": "Winter 2024",
@@ -15,9 +14,10 @@ def test_deduct_points_deduct_places(client):
     }
     places_booked = 3
 
-    response1 = client.get(
+    response1 = client.post(
         "/purchasePlaces",
         data={
+            "places": 0,
             "club": club_to_use["name"],
             "competition": competition_to_use["name"],
         },

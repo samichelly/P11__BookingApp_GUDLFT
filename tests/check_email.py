@@ -52,3 +52,9 @@ def test_missing_email(client):
 
     assert response.status_code == 400
     assert b'{"Error":"Incorrect email"}' in response.data
+
+
+def test_logout(client):
+    response = client.get("/logout")
+
+    assert response.status_code == 302

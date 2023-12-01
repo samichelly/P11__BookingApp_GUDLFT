@@ -1,15 +1,27 @@
 import pytest
-from flask import Flask, current_app#, create_app
+import json
+from flask import Flask, current_app  # , create_app
 from server import app
+
+
+def load_test_clubs():
+    with open("tests/test_clubs.json") as c:
+        list_of_test_clubs = json.load(c)["clubs"]
+        return list_of_test_clubs
+
+
+def load_test_competitions():
+    with open("tests/test_competitions.json") as comps:
+        list_of_test_competitions = json.load(comps)["competitions"]
+        return list_of_test_competitions
 
 
 @pytest.fixture
 def client():
-    # app = create_app(testing=True)
     app.config["TESTING"] = True
-    print("\nTest Example is running.\n")
+    app.competitions = load_test_competitions()
+    app.clubs = load_test_clubs()
     with app.test_client() as client:
-        # client.environ_base["HTTP_ACCEPT"] = "application/json"
         yield client
 
 
@@ -21,7 +33,6 @@ def client():
 # @pytest.fixture(scope="function")
 # def club_data_two():
 #     return {"name": "Iron Temple", "email": "admin@irontemple.com", "points": "34"}
-
 
 
 # @pytest.fixture(scope="function")
