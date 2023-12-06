@@ -156,24 +156,23 @@ def purchase_places():
         club["points"] -= placesRequired
         reserved_places[(club["name"], competition["name"])] += placesRequired
 
-        response_data = {
-            "club": {
-                "name": club["name"],
-                "email": club["email"],
-                "points": club["points"],
-            },
-            "competition": {
-                "name": competition["name"],
-                "date": competition["date"],
-                "numberOfPlaces": competition["numberOfPlaces"],
-            },
-        }
-
     except (PastCompetitionError, OverbookingError, ValueError) as e:
         return handle_error(str(e), 400, club, app.competitions)
 
     else:
         if app.config["TESTING"]:
+            response_data = {
+                "club": {
+                    "name": club["name"],
+                    "email": club["email"],
+                    "points": club["points"],
+                },
+                "competition": {
+                    "name": competition["name"],
+                    "date": competition["date"],
+                    "numberOfPlaces": competition["numberOfPlaces"],
+                },
+            }
             return jsonify(response_data)
         else:
             flash(f"Great - {placesRequired} place(s) booked !")
