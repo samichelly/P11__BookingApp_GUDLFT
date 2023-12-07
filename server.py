@@ -64,7 +64,10 @@ def handle_error(error_message, status_code, club=None, competitions=None):
 @app.route("/")
 def index():
     clubs_sorted = sorted(app.clubs, key=lambda x: x["name"])
-    return render_template("index.html", clubs=clubs_sorted)
+    if app.config["TESTING"]:
+        return jsonify(clubs_sorted), 200
+    else:
+        return render_template("index.html", clubs=clubs_sorted)
 
 
 @app.route("/showSummary", methods=["POST"])

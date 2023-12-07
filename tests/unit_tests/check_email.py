@@ -1,8 +1,5 @@
 import json
-import pytest
-from flask import Flask
-from server import app
-from .fixtures import client
+from ..fixtures import client
 
 
 def test_valid_email(client):

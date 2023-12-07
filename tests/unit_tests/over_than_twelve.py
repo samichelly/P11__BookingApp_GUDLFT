@@ -1,11 +1,7 @@
 import json
-import pytest
-from flask import Flask, current_app
-from server import app
-from .fixtures import client
+from ..fixtures import client
 
 
-# tests des inputs en fonction de club et compétition
 def test_select_less_than_12_places(client):
     competition_to_use = {
         "name": "Winter 2024",
@@ -24,7 +20,6 @@ def test_select_less_than_12_places(client):
         },
     )
     assert response.status_code == 200
-    # ajouter le nombre de places restantes et le nombres de poonts restants
 
 
 def test_select_more_than_12_places(client):
@@ -95,9 +90,6 @@ def test_select_more_than_club_points(client):
         },
     )
 
-    print("\nresponse\n")
-    print(response.data)
-    print("\nresponse\n")
     assert response.status_code == 400
     assert b'{"Error":"Cannot select more places than the club has"}' in response.data
 

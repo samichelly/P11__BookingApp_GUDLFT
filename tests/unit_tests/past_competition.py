@@ -1,8 +1,5 @@
 import json
-import pytest
-from flask import Flask, current_app
-from server import app
-from .fixtures import client
+from ..fixtures import client
 
 
 def test_purchase_places_past_competition(client):
@@ -28,7 +25,6 @@ def test_purchase_places_future_competition(client):
         "name": "Winter 2024",
     }
 
-    print("future_competition : ", future_competition)
     response = client.post(
         "/purchasePlaces",
         data={
